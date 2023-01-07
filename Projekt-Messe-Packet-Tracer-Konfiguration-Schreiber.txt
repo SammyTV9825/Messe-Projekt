@@ -1,0 +1,97 @@
+Firmen-Router(config)# hostname Firmen-Router
+Firmen-Router(config)# interface GigabitEthernet0/0
+Firmen-Router(config-if)# ip address 87.172.174.69 255.255.0.0
+Firmen-Router(config-if)# no shutdown
+Firmen-Router(config-if)# exit
+Firmen-Router(config)# interface GigabitEthernet0/1
+Firmen-Router(config-if)# ip address 10.1.1.1 255.255.255.0
+Firmen-Router(config-if)# no shutdown
+Firmen-Router(config-if)# exit
+Firmen-Router(config)# ip route 0.0.0.0 0.0.0.0 87.172.174.1
+
+Internet-Router(config)# hostname Internet-Router
+Internet-Router(config)# interface GigabitEthernet1/0
+Internet-Router(config-if)# ip address 87.172.174.1 255.255.0.0
+Internet-Router(config-if)# no shutdown
+Internet-Router(config-if)# exit
+Internet-Router(config)# interface GigabitEthernet2/0
+Internet-Router(config-if)# ip address 87.192.194.1 255.255.0.0
+Internet-Router(config-if)# no shutdown
+Internet-Router(config-if)# exit
+
+Messebetreiber-Router(config)# hostname Messebetreiber-Router
+Messebetreiber-Router(config)# interface GigabitEthernet0/0
+Messebetreiber-Router(config-if)# ip address 87.192.194.69 255.255.255.0
+Messebetreiber-Router(config-if)# no shutdown
+Messebetreiber-Router(config-if)# exit
+Messebetreiber-Router(config)# interface GigabitEthernet1/0
+Messebetreiber-Router(config-if)# ip address 192.168.1.193 255.255.255.192
+Messebetreiber-Router(config-if)# no shutdown
+Messebetreiber-Router(config-if)# exit
+Messebetreiber-Router(config)# ip route 0.0.0.0 0.0.0.0 87.192.194.1
+
+Messe-Router(config)# hostname Messe-Router
+Messe-Router(config)# interface GigabitEthernet0/0
+Messe-Router(config-if)# ip address 192.168.1.194 255.255.255.192
+Messe-Router(config-if)# no shutdown
+Messe-Router(config-if)# exit
+Messe-Router(config)# interface GigabitEthernet1/0
+Messe-Router(config-if)# ip address 10.1.2.1 255.255.255.0
+Messe-Router(config-if)# no shutdown
+Messe-Router(config-if)# exit
+Messe-Router(config)# ip route 0.0.0.0 0.0.0.0 192.168.1.193
+
+------------------------------
+
+Firmen-Router (config)# int e0/0 
+Firmen-Router (config-if)# ip nat inside
+Firmen-Router (config-if)# exit
+Firmen-Router (config)# int s0/0 
+Firmen-Router (config-if)# ip nat outside
+Firmen-Router (config-if)# exit
+
+Firmen-Router (config)# access-list 10 permit 10.1.1.0 0.0.0.255
+Firmen-Router (config)# ip nat pool IPCISCO 50.50.50.80 50.50.50.80 netmask 255.255.255.0
+Firmen-Router (config)# ip nat inside source list 10 pool IPCISCO overload
+
+------------------------------
+
+Firmen-Router(config)# access-list 100 permit ip 172.16.1.0 0.0.0.255 172.16.3.0 0.0.0.255
+ 
+Messe-Router(config)# access-list 100 permit ip 172.16.3.0 0.0.0.255 172.16.1.0 0.0.0.255
+
+Firmen-Router(config)# crypto isakmp policy 10
+Firmen-Router(config)# encryption aes 256
+Firmen-Router(config)# authentication pre-share
+Firmen-Router(config)# group 5
+Firmen-Router(config)# crypto isakmp key Secret-2020 address 100.100.200.1
+ 
+Messe-Router(config)# crypto isakmp policy 10
+Messe-Router(config)# encryption aes 256
+Messe-Router(config)# authentication pre-share
+Messe-Router(config)# group 5
+Messe-Router(config)# crypto isakmp key Secret-2020 address 100.100.100.1
+
+Firmen-Router(config)# crypto ipsec transform-set R_01-R_03 esp-aes 256 esp-sha-hmac
+ 
+Messe-Router(config)# crypto ipsec transform-set R_03-R_01 esp-aes 256 esp-sha-hmac
+
+Firmen-Router(config)# crypto map IPSEC-CRYPTOMAP 100 ipsec-isakmp 
+Firmen-Router(config)# set peer 100.100.200.1
+Firmen-Router(config)# set pfs group5
+Firmen-Router(config)# set security-association lifetime seconds 86400
+Firmen-Router(config)# set transform-set R_01-R_03 
+Firmen-Router(config)# match address 100
+ 
+Messe-Router(config)# crypto map IPSEC-CRYPTOMAP 100 ipsec-isakmp 
+Messe-Router(config)# set peer 100.100.100.1
+Messe-Router(config)# set pfs group5
+Messe-Router(config)# set security-association lifetime seconds 86400
+Messe-Router(config)# set transform-set R_03-R_01
+Messe-Router(config)# match address 100
+ 
+Firmen-Router(config)# interface GigabitEthernet0/0
+Firmen-Router(config)# crypto map IPSEC-CRYPTOMAP
+ 
+Messe-Router(config)# interface GigabitEthernet0/0
+Messe-Router(config)# crypto map IPSEC-CRYPTOMAP
