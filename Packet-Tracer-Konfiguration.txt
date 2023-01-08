@@ -1,0 +1,95 @@
+Firmen-Router(config)# hostname Firmen-Router
+Firmen-Router(config)# interface g0/0
+Firmen-Router(config-if)# ip address 209.165.100.1 255.255.255.0
+Firmen-Router(config-if)# no shut
+Firmen-Router(config-if)# exit
+Firmen-Router(config)# interface g0/1
+Firmen-Router(config-if)# ip address 10.1.1.1 255.255.255.0
+Firmen-Router(config-if)# no shut
+Firmen-Router(config-if)# exit
+Firmen-Router(config)# ip route 0.0.0.0 0.0.0.0 209.165.100.2
+
+Internet-Router(config)# hostname Internet-Router
+Internet-Router(config)# interface g0/0 209.165.100.2 255.255.255.0
+Internet-Router(config-if)# ip address 
+Internet-Router(config-if)# no shutdown
+Internet-Router(config-if)# exit
+Internet-Router(config)# interface g0/1 209.165.200.2 255.255.255.0
+Internet-Router(config-if)# ip address 
+Internet-Router(config-if)# no shutdown
+Internet-Router(config-if)# exit
+
+Messe-Router(config)# hostname Messe-Router
+Messe-Router(config)# interface g0/0
+Messe-Router(config-if)# ip address 209.165.200.1 255.255.255.0
+Messe-Router(config-if)# no shutdown
+Messe-Router(config-if)# exit
+Messe-Router(config)# interface g0/1
+Messe-Router(config-if)# ip address 10.1.3.1 255.255.255.192
+Messe-Router(config-if)# no shutdown
+Messe-Router(config-if)# exit
+Messe-Router(config)# ip route 0.0.0.0 0.0.0.0 209.165.200.2
+
+-------[Security License]-------
+
+Firmen-Router(config)# license boot module c1900 technology-package securityk9
+Firmen-Router# copy run start
+Firmen-Router# reload
+
+Internet-Router(config)# license boot module c1900 technology-package securityk9
+Internet-Router# copy run start
+Internet-Router# reload
+
+Messe-Router(config)# license boot module c1900 technology-package securityk9
+Messe-Router# copy run start
+Messe-Router# reload
+
+-------[ACL]------
+
+Firmen-Router(config)# access-list 100 permit ip 10.1.1.0 0.0.0.255 10.1.3.0 0.0.0.255
+
+Messe-Router(config)# access-list 100 permit ip 10.1.3.0 0.0.0.255 10.1.1.0 0.0.0.255
+
+--------[ISAKMP policy/ISAKMP key]------
+
+Firmen-Router(config)# crypto isakmp policy 10
+Firmen-Router(config-isakmp)# encryption aes 256
+Firmen-Router(config-isakmp)# authentication pre-share
+Firmen-Router(config-isakmp)# group 5
+
+Messe-Router(config)# crypto isakmp policy 10
+Messe-Router(config-isakmp)# encryption aes 256
+Messe-Router(config-isakmp)# authentication pre-share
+Messe-Router(config-isakmp)# group 5
+
+Firmen-Router(config)# crypto isakmp key secretkey address 209.165.200.1
+
+Messe-Router(config)# crypto isakmp key secretkey address 209.165.100.1
+
+---------[IPsec transform-set]---------
+
+Firmen-Router(config)# crypto ipsec transform-set Firmen-Router-Messe-Router esp-aes 256 esp-sha-hmac
+
+Messe-Router(config)# crypto ipsec transform-set Messe-Router-Firmen-Router esp-aes 256 esp-sha-hmac
+
+Firmen-Router(config)# crypto map IPSEC-MAP 10 ipsec-isakmp
+Firmen-Router(config-crypto-map)# set peer 209.165.200.1
+Firmen-Router(config-crypto-map)# set pfs group5
+Firmen-Router(config-crypto-map)# set security-association lifetime seconds 86400
+Firmen-Router(config-crypto-map)# set transform-set Firmen-Router-Messe-Router
+Firmen-Router(config-crypto-map)# match address 100
+
+Messe-Router(config)# crypto map IPSEC-MAP 10 ipsec-isakmp
+Messe-Router(config-crypto-map)# set peer 209.165.100.1
+Messe-Router(config-crypto-map)# set pfs group5
+Messe-Router(config-crypto-map)# set security-association lifetime seconds 86400
+Messe-Router(config-crypto-map)# set transform-set Messe-Router-Firmen-Router
+Messe-Router(config-crypto-map)# match address 100
+
+-----------[Apply Crypto map to interface]------------
+
+Firmen-Router(config-crypto-map)# int g0/0
+Firmen-Router(config-if)# crypto map IPSEC-MAP
+
+Messe-Router(config-crypto-map)# int g0/0
+Messe-Router(config-if)# crypto map IPSEC-MAP
