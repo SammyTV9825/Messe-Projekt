@@ -1,2 +1,4 @@
 # Messe-Projekt
-Achtung Virus
+Doku-Projekt-Messe -> Dokumentation
+Projekt-Messe-App.zip -> App als .exe
+
